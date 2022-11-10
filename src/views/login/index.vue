@@ -21,7 +21,7 @@
         <el-input
           ref="mobile"
           v-model="loginForm.mobile"
-          placeholder="mobile"
+          placeholder="请输入手机号"
           name="mobile"
           type="text"
           tabindex="1"
@@ -38,7 +38,7 @@
           ref="password"
           v-model="loginForm.password"
           :type="passwordType"
-          placeholder="Password"
+          placeholder="请输入密码"
           name="password"
           tabindex="2"
           auto-complete="on"
@@ -52,16 +52,16 @@
       </el-form-item>
 
       <el-button
+        class="loginBtn"
         :loading="loading"
         type="primary"
         style="width: 100%; margin-bottom: 30px"
         @click.native.prevent="handleLogin"
-        class="loginBtn"
         >登录</el-button
       >
 
       <div class="tips">
-        <span style="margin-right: 20px">手机号: 13800000002</span>
+        <span style="margin-right: 20px">账号: 13800000002</span>
         <span> 密码: 123456</span>
       </div>
     </el-form>
@@ -70,23 +70,20 @@
 
 <script>
 import { validMobile } from "@/utils/validate";
+import { mapActions } from "vuex";
 
 export default {
   name: "Login",
   data() {
-    const validateMobile = (rule, value, callback) => {
-      if (!validMobile(value)) {
-        callback(new Error("请输入正确的手机号"));
-      } else {
-        callback();
-      }
-    };
-    const validatePassword = (rule, value, callback) => {
-      if (value.length < 6 || value.length > 16) {
-        callback(new Error("密码长度为6-16位数字字母"));
-      } else {
-        callback();
-      }
+    const validaMteMobile = (rule, value, callback) => {
+      // if (!validMobile(value)) {
+      //   callback(new Error("请输入正确的手机号码"));
+      // } else {
+      //   callback();
+      // }
+      validMobile(value)
+        ? callback()
+        : callback(new Error("请输入正确的手机号码"));
     };
     return {
       loginForm: {
@@ -96,10 +93,11 @@ export default {
       loginRules: {
         mobile: [
           { required: true, trigger: "blur", message: "手机号不能为空" },
-          { trigger: "blur", validator: validateMobile },
+          { validator: validaMteMobile, trigger: "blur" },
         ],
         password: [
-          { required: true, trigger: "blur", validator: validatePassword },
+          { required: true, trigger: "blur", message: "密码不能为空" },
+          { trigger: "blur", min: 6, max: 16, message: "密码长度为6-16之间" },
         ],
       },
       loading: false,
@@ -116,6 +114,7 @@ export default {
     },
   },
   methods: {
+    ...mapActions(["user/login"]), //引入方法
     showPwd() {
       if (this.passwordType === "password") {
         this.passwordType = "";
@@ -127,21 +126,22 @@ export default {
       });
     },
     handleLogin() {
-      this.$refs.loginForm.validate((valid) => {
-        if (valid) {
-          this.loading = true;
-          this.$store
-            .dispatch("user/login", this.loginForm)
-            .then(() => {
-              this.$router.push({ path: this.redirect || "/" });
-              this.loading = false;
-            })
-            .catch(() => {
-              this.loading = false;
-            });
-        } else {
-          console.log("error submit!!");
-          return false;
+      this.$refs.loginForm.validate(async (isOK) => {
+        if (isOK) {
+          try {
+            this.loading = true;
+            // 只有校验通过了 我们才去调用action
+            await this["user/login"](this.loginForm);
+            // 应该登录成功之后
+            // async标记的函数实际上一个promise对象
+            // await下面的代码 都是成功执行的代码
+            this.$router.push("/");
+          } catch (error) {
+            console.log(error);
+          } finally {
+            //  不论执行try 还是catch  都去关闭转圈
+            this.loading = false;
+          }
         }
       });
     },
@@ -165,7 +165,8 @@ $cursor: #fff;
 
 /* reset element-ui css */
 .login-container {
-  background: url("~@/assets/common/login.jpg") no-repeat center center;
+  background-image: url("~@/assets/common/login.jpg");
+  background-position: center;
   .el-input {
     display: inline-block;
     height: 47px;
@@ -194,6 +195,7 @@ $cursor: #fff;
     border-radius: 5px;
     color: #454545;
   }
+
   .el-form-item__error {
     color: #fff;
   }

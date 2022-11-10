@@ -1,5 +1,6 @@
 module.exports = {
-  title: "人力资源管理平台",
+  // 项目标题
+  title: '人力资源管理平台',
 
   /**
    * @type {boolean} true | false
@@ -11,5 +12,5 @@ module.exports = {
    * @type {boolean} true | false
    * @description Whether show the logo in sidebar
    */
-  sidebarLogo: false,
-};
+  sidebarLogo: true
+}
